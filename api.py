@@ -1,4 +1,4 @@
-import base64, json, gzip, httpx, os, re
+import base64, json, gzip, httpx, os, re, time, copy
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -61,6 +61,11 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer":
 ANILIST_URL = "https://graphql.anilist.co"
 MIRURO_PIPE_URL = "https://www.miruro.tv/api/secure/pipe"
 
+
+# ─── Episode Cache ───────────────────────────────────────────────────────────
+_episode_cache: dict = {}
+CACHE_TTL = 300  # 5 minutes
+
 def _proxy_img(url: str) -> str:
     return url
 
@@ -93,7 +98,13 @@ def _inject_source_slugs(data: dict, anilist_id: int):
     return data
 
 async def _fetch_raw_episodes(anilist_id: int) -> dict:
-    """Internal helper to fetch raw, decoded episode data from Miruro pipe."""
+    """Internal helper to fetch raw, decoded episode data from Miruro pipe — with cache."""
+    now = time.time()
+    if anilist_id in _episode_cache:
+        data, ts = _episode_cache[anilist_id]
+        if now - ts < CACHE_TTL:
+            return copy.deepcopy(data)  # return cached copy instantly ⚡
+
     payload = {
         "path": "episodes",
         "method": "GET",
@@ -108,7 +119,15 @@ async def _fetch_raw_episodes(anilist_id: int) -> dict:
             raise HTTPException(status_code=res.status_code, detail="Pipe request failed")
         data = _decode_pipe_response(res.text.strip())
         _deep_translate(data)
-        return data
+        _episode_cache[anilist_id] = (data, now)  # save to cache
+        return copy.deepcopy(data)
+
+
+
+@app.head("/")
+async def head_home():
+    """Health check for Render."""
+    return Response(status_code=200)
 
 # ─── Shared GraphQL Fragments ────────────────────────────────────────────────
 
