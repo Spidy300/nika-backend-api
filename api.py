@@ -1053,7 +1053,7 @@ async def kwik_extract(request: Request, url: str = Query(..., description="kwik
         raise HTTPException(status_code=res.status_code, detail=f"Kwik returned HTTP {res.status_code}")
 
     html = res.text
-    base_proxy = str(request.base_url).rstrip("/")
+    base_proxy = str(request.base_url).rstrip("/").replace("http://", "https://")
 
     # Pass 1: m3u8 URL visible directly in page source
     direct = re.search(r'https?://[^\s"<>]+\.m3u8', html)
@@ -1092,7 +1092,7 @@ async def kwik_extract(request: Request, url: str = Query(..., description="kwik
 async def proxy_video(request: Request, url: str = Query(..., description="Target video URL to proxy")):
     """Proxies HLS video streams to bypass Kwik's Referer block, including AES keys."""
     # Build absolute base so rewritten m3u8 URLs work from any origin
-    base_proxy = str(request.base_url).rstrip("/")
+    base_proxy = str(request.base_url).rstrip("/").replace("http://", "https://")
 
     upstream_headers = {
         "Referer": "https://kwik.cx/",
