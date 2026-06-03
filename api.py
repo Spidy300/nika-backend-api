@@ -18,8 +18,8 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -53,8 +53,7 @@ async def secure_api(request: Request, call_next):
 
     return JSONResponse(
         status_code=403,
-        content={"detail": "Access forbidden: Invalid Origin, Referer, or API Key."},
-        headers={"Access-Control-Allow-Origin": "*"}
+        content={"detail": "Access forbidden: Invalid Origin, Referer, or API Key."}
     )
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer": "https://www.miruro.tv/"}
@@ -1111,7 +1110,7 @@ async def kwik_extract(request: Request, url: str = Query(..., description="kwik
         raise HTTPException(status_code=res.status_code, detail=f"Kwik returned HTTP {res.status_code}")
 
     html = res.text
-    proto = request.headers.get("x-forwarded-proto", "https")
+    proto = "https"
     host = request.headers.get("host", request.url.netloc)
     base_proxy = f"{proto}://{host}"
 
@@ -1223,8 +1222,7 @@ async def kwik_download(url: str = Query(..., description="kwik.cx download or e
 async def proxy_video(request: Request, url: str = Query(..., description="Target video URL to proxy")):
     """Proxies HLS video streams to bypass Kwik's Referer block, including AES keys."""
     # Build absolute base so rewritten m3u8 URLs work from any origin
-    # Default to https — Back4App doesn't reliably pass x-forwarded-proto
-    proto = request.headers.get("x-forwarded-proto", "https")
+    proto = "https"
     host = request.headers.get("host", request.url.netloc)
     base_proxy = f"{proto}://{host}"
 
