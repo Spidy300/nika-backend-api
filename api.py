@@ -1111,7 +1111,7 @@ async def kwik_extract(request: Request, url: str = Query(..., description="kwik
         raise HTTPException(status_code=res.status_code, detail=f"Kwik returned HTTP {res.status_code}")
 
     html = res.text
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    proto = request.headers.get("x-forwarded-proto", "https")
     host = request.headers.get("host", request.url.netloc)
     base_proxy = f"{proto}://{host}"
 
@@ -1223,7 +1223,8 @@ async def kwik_download(url: str = Query(..., description="kwik.cx download or e
 async def proxy_video(request: Request, url: str = Query(..., description="Target video URL to proxy")):
     """Proxies HLS video streams to bypass Kwik's Referer block, including AES keys."""
     # Build absolute base so rewritten m3u8 URLs work from any origin
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    # Default to https — Back4App doesn't reliably pass x-forwarded-proto
+    proto = request.headers.get("x-forwarded-proto", "https")
     host = request.headers.get("host", request.url.netloc)
     base_proxy = f"{proto}://{host}"
 
