@@ -100,23 +100,21 @@
     // ─────────────────────────────────────────────────────────────────────────
 
     const statusOverlay = document.getElementById('status-overlay');
-    const PROXY_BASE = 'https://ola-vip-main-nine.vercel.app';
+    const PROXY_BASE = 'https://nikastreamapi-hdm38k3h.b4a.run';
+    const WATCH_URL = `${PROXY_BASE}/watch/kiwi/178005/sub/animepahe-1`;
 
-    // Injected JSON Data
-    const videoData = {
-      "streams": [
-        { "url": "https://vault-16.owocdn.top/stream/16/14/e07bde2b257fbe44cb15d6702d3251415c114fd6b01283cf9669b116bfd9044a/uwu.m3u8", "type": "hls", "quality": "1080p", "isActive": true },
-        { "url": "https://kwik.cx/e/V1qX4BoFgpTs", "type": "embed", "quality": "1080p", "isActive": true },
-        { "url": "https://vault-16.owocdn.top/stream/16/14/f97da2f0b88daea63e3ecfcb2c64f5a1032707088b765ac846b5b44066bfb214/uwu.m3u8", "type": "hls", "quality": "720p", "isActive": false },
-        { "url": "https://kwik.cx/e/Jsjmpaaq8Wb5", "type": "embed", "quality": "720p", "isActive": false },
-        { "url": "https://vault-16.owocdn.top/stream/16/14/0aa00c029c4fbc8a0a3e701c15f23b2ebcf44906c74f08eacfeebb188ee5948d/uwu.m3u8", "type": "hls", "quality": "360p", "isActive": false },
-        { "url": "https://kwik.cx/e/HbxsylkJ8Jmp", "type": "embed", "quality": "360p", "isActive": false }
-      ],
-      "download": "https://pahe.win/tXkzq"
-    };
+    let videoData = null;
 
-    // Extract unique available qualities for the menu
-    const availableQualities = [...new Set(videoData.streams.map(s => s.quality))];
+    // Fetch fresh stream data from API
+    async function fetchVideoData() {
+        statusOverlay.textContent = 'Fetching stream...';
+        const res = await fetch(WATCH_URL);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return await res.json();
+    }
+
+    // Extract unique available qualities for the menu (set after fetch)
+    let availableQualities = [];
 
     async function resolveStream(stream) {
         if (stream.type === 'hls') return `${PROXY_BASE}/proxy?url=${encodeURIComponent(stream.url)}`;
@@ -267,6 +265,15 @@
     }
 
     (async () => {
+        try {
+            videoData = await fetchVideoData();
+        } catch (e) {
+            statusOverlay.textContent = 'Failed to load stream data.';
+            statusOverlay.className = 'error';
+            return;
+        }
+
+        availableQualities = [...new Set(videoData.streams.map(s => s.quality))];
         const targetQuality = '720p';
         
         let initialStreams = videoData.streams.filter(s => s.quality === targetQuality);
