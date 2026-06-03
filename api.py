@@ -18,8 +18,8 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["*"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -53,7 +53,8 @@ async def secure_api(request: Request, call_next):
 
     return JSONResponse(
         status_code=403,
-        content={"detail": "Access forbidden: Invalid Origin, Referer, or API Key."}
+        content={"detail": "Access forbidden: Invalid Origin, Referer, or API Key."},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer": "https://www.miruro.tv/"}
